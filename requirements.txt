@@ -1,0 +1,10 @@
+pandas
+matplotlib
+seaborn
+streamlit
+plaid-python
+sqlalchemy
+fastapi
+uvicorn
+python-dotenv
+openai
