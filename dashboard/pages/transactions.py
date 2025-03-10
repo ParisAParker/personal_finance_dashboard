@@ -2,14 +2,24 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import json
 from pathlib import Path
 
-# Set page config
-st.set_page_config(layout="wide", page_title="Financial Dashboard")
+# # Set page config
+# st.set_page_config(layout="wide", page_title="Financial Dashboard")
 
 # Read in transaction data
+reports_folder = Path(__file__).parents[2] / 'data/reports'
 transaction_folder = Path(__file__).parents[2] / 'data/transactions'
 transactions_df = pd.read_csv(transaction_folder / 'categorized_transactions.csv')
+
+# Load in Chase bank balances
+with open(reports_folder / "chase_balances.json", "r") as file:
+    saved_balances = json.load(file)
+
+chase_checkings_balance = saved_balances["chase_checkings_balance"]
+chase_savings_balance = saved_balances["chase_savings_balance"]
+total_cash = chase_checkings_balance + chase_savings_balance
 
 def classify_expense_income(amount):
     if amount < 0:
@@ -36,7 +46,7 @@ car_lease_balance = round((total_car_lease + total_car_lease_paid),2)
 credit_card_balance = round(amex_transactions['Amount'].sum(),2)
 nss_school_balance = (nss_total_amount + nss_total_paid)
 balance_test = 17000
-net_worth = (balance_test - credit_card_balance - car_lease_balance - nss_school_balance)
+net_worth = (total_cash - credit_card_balance - car_lease_balance - nss_school_balance)
 
 if net_worth >= 0:
     net_worth_color = 'green'
@@ -119,7 +129,7 @@ with col1:
             <img class="custom-image" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQTXaOITWqnf8fuuebyU26oku_Z1YGZh8fF_Q&s">
             <div class="text-content">
                 <p class="title-text"> Total Cash: </p>
-                <p class="amount-cash">${balance_test:,.2f}</p>
+                <p class="amount-cash">${total_cash:,.2f}</p>
             </div>
         </div>
         """,
