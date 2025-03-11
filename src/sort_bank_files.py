@@ -38,6 +38,7 @@ for file in source_dir.iterdir():
         if pattern in file.name:  # Check if filename contains the pattern
             destination_file = destination_dir / new_name
             move_file(file, destination_file)
+            print(f"Successfully moved {file.name} to {destination_file}")
             break  # Stop once the correct file is found
-        
+
 print("File processing complete!")

@@ -1,4 +1,35 @@
 # Analyze monthly spending vs budget
+import os
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from pathlib import Path
+from pandas.tseries.offsets import BDay
+from dotenv import load_dotenv
+
+def plot_expense_by_category(df):
+    current_expenses = df[df['Transaction_Type'] == 'Expense']
+    current_expenses['abs_amount'] = current_expenses['Amount'].abs()
+
+    expense_by_category = current_expenses.groupby('Category')['abs_amount'].sum().reset_index()
+    expense_by_category = expense_by_category[expense_by_category['Category'] != 'Savings']
+    expense_by_category = expense_by_category.sort_values(by='abs_amount', ascending=True)
+
+    # Create figure and axis
+    fig, ax = plt.subplots(figsize=(10,6))
+
+    # Create horizontal bar plot
+    ax.barh(expense_by_category['Category'], expense_by_category['abs_amount'], color='royalblue')
+
+    # Add labels and title
+    # ax.set_xlabel('Expenses ($)')
+    # ax.set_ylabel('Category')
+    ax.set_title('Monthly Expenses by Category')
+    ax.grid(axis='x', linestyle='--', alpha=0.7)
+
+    return fig
+
 
 def get_actual_payday(year, month):
     """

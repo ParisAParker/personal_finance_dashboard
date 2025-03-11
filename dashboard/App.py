@@ -1,10 +1,14 @@
 # Main Streamlit dashboard app
 import requests
 import json
+import sys
+from pathlib import Path
+BASE_DIR = Path(__file__).parents[1]
+sys.path.append(str(BASE_DIR))
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from pathlib import Path
+from src.budget_analysis import plot_expense_by_category, get_actual_payday, assign_pay_period, transaction_pay_period, classify_income_expense, get_current_pay_period
 
 # FastAPI Backend URL
 FASTAPI_URL = "http://127.0.0.1:8000"
@@ -13,12 +17,22 @@ FASTAPI_URL = "http://127.0.0.1:8000"
 st.set_page_config(
     page_title="Personal Finance Dashboard",
     layout = "wide"
-    )
+)
 
 # Read in transaction data
 reports_folder = Path(__file__).parents[1] / 'data/reports'
 transaction_folder = Path(__file__).parents[1] / 'data/transactions'
 transactions_df = pd.read_csv(transaction_folder / 'categorized_transactions.csv')
+transactions_df = assign_pay_period(transactions_df)
+transactions_df = transaction_pay_period(transactions_df)
+transactions_df = classify_income_expense(transactions_df)
+
+# Get the current pay period
+current_pay_period = get_current_pay_period(transactions_df)[0]
+current_income = get_current_pay_period(transactions_df)[1]
+current_expense_amount = get_current_pay_period(transactions_df)[2]
+
+current_pay_period_category = plot_expense_by_category(current_pay_period)
 
 # Load in Chase bank balances
 with open(reports_folder / "chase_balances.json", "r") as file:
@@ -139,7 +153,7 @@ else:
     net_worth_color = 'red'
 # --------- LAYOUT ----------
 # Create three main columns for the dashboard layout
-col1, col2, col3 = st.columns([1.5, 2, 1.5])
+col1, col2 = st.columns([1.5, 3.5])
 # --------- COLUMN 1: NET WORTH SUMMARY ---------
 with col1:
     # Net worth metric
@@ -321,20 +335,5 @@ with col1:
         unsafe_allow_html=True
     )
 
-    # st.markdown("### NET WORTH")
-    # st.markdown(f"<h1 style='font-size: 50px;'>{'$95,285'}</h1>", unsafe_allow_html=True)
-
-    # st.markdown("##### Cash")
-    # st.metric(label="💵 Cash", value="$13,280")
-
-    # st.markdown("##### Stocks")
-    # st.metric(label="📈 Stocks", value="$92,654")
-
-    # st.markdown("##### Bonds")
-    # st.metric(label="📜 Bonds", value="$35,420")
-
-    # st.markdown("##### Loans")
-    # st.metric(label="💰 Loans", value="($43,373)", delta="-43,373", delta_color="inverse")
-
-    # st.markdown("##### Credit Cards")
-    # st.metric(label="💳 Credit Cards", value="($2,697)", delta="-2,697", delta_color="inverse")
+with col2:
+    st.pyplot(current_pay_period_category)
