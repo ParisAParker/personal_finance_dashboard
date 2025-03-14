@@ -144,7 +144,7 @@ nss_total_paid = transactions_df[transactions_df['Description'].str.contains("NA
 car_lease_balance = round((total_car_lease + total_car_lease_paid),2)
 credit_card_balance = round(amex_transactions['Amount'].sum(),2)
 nss_school_balance = (nss_total_amount + nss_total_paid)
-balance_test = 17000
+
 net_worth = (total_cash + retirement_balance - credit_card_balance - car_lease_balance - nss_school_balance)
 
 if net_worth >= 0:
