@@ -8,7 +8,7 @@ sys.path.append(str(BASE_DIR))
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from src.budget_analysis import plot_expense_by_category, get_actual_payday, assign_pay_period, transaction_pay_period, classify_income_expense, get_current_pay_period
+from src.budget_analysis import plot_expense_by_category, get_actual_payday, assign_pay_period, transaction_pay_period, classify_income_expense, get_current_pay_period, load_misc_cash, save_misc_cash, load_retire_cash, save_retire_cash, format_currency, classify_savings, apply_category_overrides, apply_one_off_changes, map_needs_wants_savings, plot_fifty_thirty_twenty
 
 # FastAPI Backend URL
 FASTAPI_URL = "http://127.0.0.1:8000"
@@ -26,13 +26,30 @@ transactions_df = pd.read_csv(transaction_folder / 'categorized_transactions.csv
 transactions_df = assign_pay_period(transactions_df)
 transactions_df = transaction_pay_period(transactions_df)
 transactions_df = classify_income_expense(transactions_df)
+transactions_df = classify_savings(transactions_df)
+PERMANENT_OVERRIDES_FILE = reports_folder / 'category_dict.json'
+ONE_OFF_CHANGES_FILE = reports_folder / 'category_one_off_changes.json'
 
-# Get the current pay period
+if "category_overrides" not in st.session_state:
+    with open(PERMANENT_OVERRIDES_FILE, 'r') as file:
+        st.session_state.category_overrides = json.load(file)
+
+if "one_off_change" not in st.session_state:
+    with open(ONE_OFF_CHANGES_FILE, 'r') as file:
+        st.session_state.one_off_changes = json.load(file)
+
+transactions_df = apply_category_overrides(transactions_df)
+transactions_df = apply_one_off_changes(transactions_df)
+
+# Get the current pay period metrics
 current_pay_period = get_current_pay_period(transactions_df)[0]
 current_income = get_current_pay_period(transactions_df)[1]
 current_expense_amount = get_current_pay_period(transactions_df)[2]
+current_savings = get_current_pay_period(transactions_df)[3]
+remaining_balance = current_income - current_savings + current_expense_amount
 
-current_pay_period_category = plot_expense_by_category(current_pay_period)
+current_pay_period = map_needs_wants_savings(current_pay_period)
+current_pay_period_expenses = current_pay_period[current_pay_period['Transaction_Type'] != 'Income']
 
 # Load in Chase bank balances
 with open(reports_folder / "chase_balances.json", "r") as file:
@@ -45,38 +62,12 @@ chase_savings_balance = saved_balances["chase_savings_balance"]
 MISC_CASH_FILE = reports_folder /"misc_cash.json"
 RETIREMENT_CASH_FILE = reports_folder / "retirement.json"
 
-# Function to load the saved value from JSON
-def load_misc_cash():
-    try:
-        with open(MISC_CASH_FILE, "r") as f:
-            return json.load(f).get("misc_cash", 0.0)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return 0.0  # Default value if file is missing or corrupted
-
-# Function to save the input value to JSON
-def save_misc_cash(value):
-    with open(MISC_CASH_FILE, "w") as f:
-        json.dump({"misc_cash": value}, f)
-
-# Function to load the saved value from JSON
-def load_retire_cash():
-    try:
-        with open(RETIREMENT_CASH_FILE, "r") as f:
-            return json.load(f).get("retire_cash", 0.0)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return 0.0  # Default value if file is missing or corrupted
-
-# Function to save the input value to JSON
-def save_retire_cash(value):
-    with open(RETIREMENT_CASH_FILE, "w") as f:
-        json.dump({"retire_cash": value}, f)
-
 # Initialize session state for cash values
 if "misc_cash" not in st.session_state:
-    st.session_state["misc_cash"] = load_misc_cash()
+    st.session_state["misc_cash"] = load_misc_cash(MISC_CASH_FILE)
 
 if "retire_cash" not in st.session_state:
-    st.session_state["retire_cash"] = load_retire_cash()
+    st.session_state["retire_cash"] = load_retire_cash(RETIREMENT_CASH_FILE)
 
 # Initialize session state for showing input fields
 if "show_inputs" not in st.session_state:
@@ -105,30 +96,19 @@ if st.session_state["show_inputs"]:
     # Save the values when they change
     if misc_cash != st.session_state["misc_cash"]:
         st.session_state["misc_cash"] = misc_cash
-        save_misc_cash(misc_cash)
+        save_misc_cash(MISC_CASH_FILE, misc_cash)
 
     if retire_cash != st.session_state["retire_cash"]:
         st.session_state["retire_cash"] = retire_cash
-        save_retire_cash(retire_cash)
+        save_retire_cash(RETIREMENT_CASH_FILE, retire_cash)
 
 # Display stored values
 # st.write(f"Saved Miscellaneous Cash: ${st.session_state['misc_cash']}")
 # st.write(f"Saved Retirement Cash: ${st.session_state['retire_cash']}")
 
-retirement_balance = load_retire_cash()
-misc_cash_num = load_misc_cash()
+retirement_balance = load_retire_cash(RETIREMENT_CASH_FILE)
+misc_cash_num = load_misc_cash(MISC_CASH_FILE)
 
-def classify_expense_income(amount):
-    if amount < 0:
-        type_of_transaction = 'Expense'
-    elif amount > 0:
-        type_of_transaction = "Income"
-    else:
-        type_of_transaction = "Neutral"
-    
-    return type_of_transaction
-
-transactions_df['Transaction_Type'] = transactions_df.apply(lambda row: classify_expense_income(amount=row["Amount"]), axis=1)
 # Create dataframe for expenses
 expenses_df = transactions_df[transactions_df['Transaction_Type'] == 'Expense']
 
@@ -336,4 +316,28 @@ with col1:
     )
 
 with col2:
-    st.pyplot(current_pay_period_category)
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric(
+            label='Pay Period Income',
+            value=format_currency(current_income)
+            )
+    with col2:
+        st.metric(
+            label='Pay Period Expenses',
+            value=format_currency(current_expense_amount)
+        )
+    with col3:
+        st.metric(
+            label='Pay Period Savings',
+            value=format_currency(current_savings)
+        )
+    with col4:
+        st.metric(
+            label='Pay Period Remaining',
+            value=format_currency(remaining_balance)
+        )
+    pie_plot = plot_fifty_thirty_twenty(current_pay_period_expenses)
+    st.pyplot(pie_plot[0])
+
+st.plotly_chart(plot_expense_by_category(current_pay_period))

@@ -6,13 +6,13 @@ destination_dir = Path('c:/Users/kidsa/OneDrive/Documents/Projects/mlops-project
 
 # File mapping for static filenames
 static_file_mapping = {
-    "activity.csv": "amex_transactions.csv",
+    "activity.csv": "amex_transactions_new.csv",
 }
 
 # String-based Chase file patterns
 chase_patterns = {
-    "Chase6708_Activity": "chase_checkings_transactions.csv",
-    "Chase6031_Activity": "chase_savings_transactions.csv",
+    "Chase6708_Activity": "chase_checkings_transactions_new.csv",
+    "Chase6031_Activity": "chase_savings_transactions_new.csv",
 }
 
 # Function to move and handle file overwrites

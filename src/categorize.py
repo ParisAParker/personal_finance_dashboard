@@ -55,12 +55,9 @@ def classify_transaction(description, api_key):
     prompt = f"""
     Classify this description into a category:
     - Description: {description}
-    - Categories: Housing, Utilities, Groceries, Transportation, Insurance, Debt Payments, Dining & Takeout, Entertainment,
-                 Shopping, Subscriptions & Memberships, Personal Care, Hobbies & Recreation, Medical & Healthcare, Fitness,
-                Self-Care, Savings, Investments, Education & Self-Development, Business Expenses, Taxes, Travel,
-                and Gifts & Donations..
+    - Categories: Rent/Mortgage, Transportation, Groceries, Dining Out, Bills/Utilities, Car Payment, Gas, Debt Payments, Savings, Shopping, Entertainment, Subscriptions, Personal Care/Grooming, Education/Project, Miscellaneous.
 
-    Provide only the category name
+    Provide only the category name. No exceptions or explanations.
     """
 
     client = OpenAI(
