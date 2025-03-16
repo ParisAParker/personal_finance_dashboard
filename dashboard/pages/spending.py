@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import json
 from pathlib import Path
-from src.budget_analysis import assign_pay_period, transaction_pay_period, classify_income_expense, classify_savings, apply_category_overrides, apply_one_off_changes, plot_fifty_thirty_twenty, map_needs_wants_savings, format_currency, plot_largest_expenses
+from src.budget_analysis import assign_pay_period, transaction_pay_period, classify_income_expense, classify_savings, apply_category_overrides, apply_one_off_changes, plot_fifty_thirty_twenty, map_needs_wants_savings, format_currency, plot_largest_expenses, plot_category_over_time
 
 # Set up the page title
 st.set_page_config(
@@ -34,13 +34,14 @@ if "one_off_change" not in st.session_state:
 transactions_df = apply_category_overrides(transactions_df)
 transactions_df = apply_one_off_changes(transactions_df)
 
-selected_month = st.selectbox("Select Pay Period Month:", transactions_df['Pay_Period'].unique())
-filtered_df = transactions_df[transactions_df['Pay_Period'] == selected_month]
-pie_plot = plot_fifty_thirty_twenty(filtered_df)
-
-tab1, tab2 = st.tabs(["Monthly Breakdown", "Category Breakdown"])
+tab1, tab2, tab3 = st.tabs(["Monthly Breakdown", "Category Breakdown", "Savings Rate"])
 
 with tab1:
+
+    selected_month = st.selectbox("Select Pay Period Month:", transactions_df['Pay_Period'].unique())
+    filtered_df = transactions_df[transactions_df['Pay_Period'] == selected_month]
+    pie_plot = plot_fifty_thirty_twenty(filtered_df)
+    
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric(
@@ -65,6 +66,9 @@ with tab1:
     with col2:
         st.pyplot(plot_largest_expenses(filtered_df, selected_month))
 
-# with tab2:
-    
+with tab2:
+    selected_category = st.selectbox("Choose Category:", transactions_df['Category'].unique())
+    filtered_df = transactions_df[transactions_df['Category'] == selected_category]
+    category_plot = plot_category_over_time(filtered_df, selected_category)
+    st.pyplot(category_plot)
 # st.dataframe(filtered_df)

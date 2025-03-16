@@ -27,6 +27,7 @@ transactions_df = assign_pay_period(transactions_df)
 transactions_df = transaction_pay_period(transactions_df)
 transactions_df = classify_income_expense(transactions_df)
 transactions_df = classify_savings(transactions_df)
+transactions_df = map_needs_wants_savings(transactions_df)
 PERMANENT_OVERRIDES_FILE = reports_folder / 'category_dict.json'
 ONE_OFF_CHANGES_FILE = reports_folder / 'category_one_off_changes.json'
 
@@ -337,7 +338,11 @@ with col2:
             label='Pay Period Remaining',
             value=format_currency(remaining_balance)
         )
-    pie_plot = plot_fifty_thirty_twenty(current_pay_period_expenses)
+    selected_month = transactions_df['Pay_Period'][0]
+    filtered_df = transactions_df[transactions_df['Pay_Period'] == selected_month]
+    pie_plot = plot_fifty_thirty_twenty(filtered_df)
+    # st.dataframe(current_pay_period_expenses)
+    # pie_plot = plot_fifty_thirty_twenty(current_pay_period_expenses)
     st.pyplot(pie_plot[0])
 
 st.plotly_chart(plot_expense_by_category(current_pay_period))

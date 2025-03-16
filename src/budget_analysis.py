@@ -311,3 +311,36 @@ def plot_largest_expenses(original_df, selected_month):
     ax.set_ylabel("Description")
     ax.set_title(f"Largest Expenses for {selected_month}")
     return fig
+
+def plot_category_over_time(original_df, selected_category):
+    df = original_df.copy()
+    filtered_df = df[df['Category'] == selected_category]
+    filtered_df['Pay_Period_DT'] = pd.to_datetime(filtered_df['Pay_Period'])
+    filtered_df['abs_amount'] = filtered_df['Amount'].abs()
+    
+    monthly_category = filtered_df.groupby('Pay_Period_DT')['abs_amount'].sum().reset_index()
+    monthly_category['Pay_Period_Month_Year'] = monthly_category['Pay_Period_DT'].dt.strftime("%B-%Y")
+    months = monthly_category['Pay_Period_Month_Year']
+    expenses = round(monthly_category['abs_amount'],2)
+
+    fig, ax = plt.subplots(figsize=(8,8))
+
+    # ax.plot(months, expenses)
+    bars = ax.barh(months, expenses)
+
+    # Add values to bars
+    for bar in bars:
+        xval = bar.get_width()
+        ax.text(xval,
+                bar.get_y() + bar.get_height()/2,
+                f"{xval}",
+                va="center", ha="left", fontsize=10
+                )
+
+    ax.set_title(f"{selected_category} Expenses Over Time")
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    # ax.tick_params(axis='x', rotation=90)
+    # ax.set_xticks(months)
+
+    return fig
