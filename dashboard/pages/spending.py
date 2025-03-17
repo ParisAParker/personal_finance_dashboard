@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import json
 from pathlib import Path
-from src.budget_analysis import assign_pay_period, transaction_pay_period, classify_income_expense, classify_savings, apply_category_overrides, apply_one_off_changes, plot_fifty_thirty_twenty, map_needs_wants_savings, format_currency, plot_largest_expenses, plot_category_over_time
+from src.budget_analysis import assign_pay_period, transaction_pay_period, classify_income_expense, classify_savings, apply_category_overrides, apply_one_off_changes, plot_fifty_thirty_twenty, map_needs_wants_savings, format_currency, plot_largest_expenses, plot_category_over_time, plot_savings
 
 # Set up the page title
 st.set_page_config(
@@ -71,4 +71,7 @@ with tab2:
     filtered_df = transactions_df[transactions_df['Category'] == selected_category]
     category_plot = plot_category_over_time(filtered_df, selected_category)
     st.pyplot(category_plot)
-# st.dataframe(filtered_df)
+
+with tab3:
+    savings_rate_plot = plot_savings(transactions_df)
+    st.pyplot(savings_rate_plot)

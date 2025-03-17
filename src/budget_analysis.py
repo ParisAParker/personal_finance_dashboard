@@ -344,3 +344,39 @@ def plot_category_over_time(original_df, selected_category):
     # ax.set_xticks(months)
 
     return fig
+
+def plot_savings(original_df, _type='savings'):
+    df = original_df.copy()
+
+    aggregate_by_pay_period = df.groupby(['Pay_Period','Transaction_Type','Category','Bank'])['Amount'].sum().reset_index()
+
+    income = aggregate_by_pay_period[(aggregate_by_pay_period['Transaction_Type'] == 'Income') & (aggregate_by_pay_period['Category'] != 'Savings') & (aggregate_by_pay_period['Bank'] != 'AMEX')]
+    expenses = aggregate_by_pay_period[(aggregate_by_pay_period['Transaction_Type'] != 'Income') & (aggregate_by_pay_period['Transaction_Type'] != 'Savings')]
+    income_by_month = income.groupby('Pay_Period')['Amount'].sum().reset_index().rename(columns={'Amount':'Income'})
+    expenses['abs_amount'] = expenses['Amount'].abs()
+    expenses_by_month = expenses.groupby('Pay_Period')['abs_amount'].sum().reset_index().rename(columns={'abs_amount':'Expenses'})
+
+    cash_flow_by_month = income_by_month.merge(
+        right=expenses_by_month
+    )
+    cash_flow_by_month['savings'] = cash_flow_by_month['Income'] - cash_flow_by_month['Expenses']
+    cash_flow_by_month['saving_pct'] = round((cash_flow_by_month['savings'] / cash_flow_by_month['Income']) * 100,1)
+    cash_flow_by_month['Pay_Period_DT'] = pd.to_datetime(cash_flow_by_month['Pay_Period'])
+
+    savings_by_month = cash_flow_by_month.sort_values(
+        by='Pay_Period_DT',
+        ascending=False
+    ).reset_index(drop=True)
+
+    savings_series = savings_by_month['savings']
+    saving_pct_series = savings_by_month['saving_pct']
+    pay_period = savings_by_month['Pay_Period']
+
+    fig, ax = plt.subplots(figsize=(8,8))
+    if _type == 'savings':
+        ax.barh(pay_period, savings_series)
+    elif _type =='savings_pct':
+        ax.barh(pay_period, saving_pct_series)
+        
+
+    return fig
